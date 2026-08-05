@@ -1,0 +1,54 @@
+name: Daily Drive Radio episode
+
+on:
+  schedule:
+    # 13:00 UTC = 6:00 AM US Pacific during PDT (daylight saving). Shifts to
+    # 5:00 AM Pacific once clocks fall back to PST in November — change the
+    # hour here if you'd rather it stay pinned to 6:00 AM local year-round.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-episode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Check out existing published site (previous episodes + feed)
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: out
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate today's episode
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PODCAST_BASE_URL: ${{ vars.PODCAST_BASE_URL }}
+        run: |
+          mkdir -p out
+          python -m drive_radio.main
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: out
+          publish_branch: gh-pages
+          keep_files: false

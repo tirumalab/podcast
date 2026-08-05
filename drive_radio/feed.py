@@ -1,0 +1,105 @@
+"""Maintain the episode manifest and regenerate the podcast RSS feed from it.
+
+The manifest (manifest.json) is the source of truth for what episodes exist.
+Each run appends the new episode, drops anything past the retention window
+(deleting its MP3 too, so GitHub Pages storage doesn't grow unbounded), then
+regenerates rss.xml fully from what's left. This keeps the feed correct even
+though every workflow run starts from a fresh checkout.
+"""
+
+import json
+import os
+
+from dateutil import parser as date_parser
+from feedgen.feed import FeedGenerator
+
+from . import config
+
+MANIFEST_FILENAME = "manifest.json"
+FEED_FILENAME = "rss.xml"
+EPISODES_DIR = "episodes"
+
+
+def load_manifest(output_dir: str) -> list[dict]:
+    path = os.path.join(output_dir, MANIFEST_FILENAME)
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        return json.load(f)
+
+
+def save_manifest(output_dir: str, episodes: list[dict]) -> None:
+    path = os.path.join(output_dir, MANIFEST_FILENAME)
+    with open(path, "w") as f:
+        json.dump(episodes, f, indent=2)
+
+
+def add_episode(
+    output_dir: str,
+    mp3_filename: str,
+    title: str,
+    description: str,
+    pub_date_iso: str,
+    duration_seconds: int,
+    file_size_bytes: int,
+) -> list[dict]:
+    """Append a new episode to the manifest, prune anything past the
+    retention window (deleting the dropped MP3s), and return the kept list."""
+    episodes = load_manifest(output_dir)
+    episodes.append(
+        {
+            "mp3_filename": mp3_filename,
+            "title": title,
+            "description": description,
+            "pub_date": pub_date_iso,
+            "duration_seconds": duration_seconds,
+            "file_size_bytes": file_size_bytes,
+        }
+    )
+    episodes.sort(key=lambda e: e["pub_date"], reverse=True)
+
+    kept = episodes[: config.MAX_EPISODES_IN_FEED]
+    dropped = episodes[config.MAX_EPISODES_IN_FEED :]
+
+    for old in dropped:
+        old_path = os.path.join(output_dir, EPISODES_DIR, old["mp3_filename"])
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    save_manifest(output_dir, kept)
+    return kept
+
+
+def _format_duration(seconds: int) -> str:
+    hours, remainder = divmod(int(seconds), 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def build_rss(output_dir: str, episodes: list[dict]) -> str:
+    fg = FeedGenerator()
+    fg.load_extension("podcast")
+    fg.title(config.PODCAST_TITLE)
+    fg.link(href=config.PODCAST_BASE_URL, rel="alternate")
+    fg.link(href=f"{config.PODCAST_BASE_URL}/{FEED_FILENAME}", rel="self")
+    fg.description(config.PODCAST_DESCRIPTION)
+    fg.language("en")
+    fg.podcast.itunes_author(config.PODCAST_AUTHOR)
+    fg.podcast.itunes_category(cat="Technology")
+    fg.podcast.itunes_explicit("no")
+
+    # feedgen renders entries in the order they're added, so add most-recent
+    # first (episodes is already sorted that way by add_episode).
+    for ep in episodes:
+        fe = fg.add_entry()
+        mp3_url = f"{config.PODCAST_BASE_URL}/{EPISODES_DIR}/{ep['mp3_filename']}"
+        fe.id(mp3_url)
+        fe.title(ep["title"])
+        fe.description(ep["description"])
+        fe.enclosure(mp3_url, str(ep["file_size_bytes"]), "audio/mpeg")
+        fe.pubDate(date_parser.isoparse(ep["pub_date"]))
+        fe.podcast.itunes_duration(_format_duration(ep["duration_seconds"]))
+
+    feed_path = os.path.join(output_dir, FEED_FILENAME)
+    fg.rss_file(feed_path)
+    return feed_path

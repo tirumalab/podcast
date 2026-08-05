@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/tirumala/Podcast/drive_radio /Users/tirumala/Podcast/assets /Users/tirumala/Podcast/.github/workflows)",
+      "Bash(python3 -m py_compile drive_radio/*.py)"
+    ]
+  }
+}
