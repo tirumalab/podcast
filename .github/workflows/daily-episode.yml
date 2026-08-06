@@ -50,9 +50,23 @@ jobs:
           mkdir -p out
           python -m drive_radio.main
 
+      # Publish immediately after the owner's own episode, before
+      # multi-tenant even starts. Measured in CI: the single-user episode
+      # alone takes ~10 minutes on the shared runner, and multi-tenant adds
+      # a further ~10-15 min per user on top — if publish waited for all of
+      # that, the owner's own daily feed (what this whole pipeline exists
+      # for) could still be unpublished well into the morning. Publishing
+      # twice means it's never held hostage by anyone else's generation.
+      - name: Publish to GitHub Pages (owner's episode)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: out
+          publish_branch: gh-pages
+          keep_files: false
+
       # Multi-tenant is new and still being proven out — continue-on-error
-      # so a bug here can never block the single-user path above (the
-      # owner's actual daily feed) from publishing. Nothing pulled from
+      # so a bug here can never block anything above. Nothing pulled from
       # Supabase here is a credential yet (no per-user API keys until BYOK
       # ships), so no ::add-mask:: is needed for now — revisit this the
       # moment that changes.
@@ -65,7 +79,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m drive_radio.multi_tenant
 
-      - name: Publish to GitHub Pages
+      - name: Publish to GitHub Pages (app users' episodes)
+        if: always()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
