@@ -13,7 +13,7 @@ import os
 from dateutil import parser as date_parser
 from feedgen.feed import FeedGenerator
 
-from . import config
+from .settings import Settings, default_settings
 
 MANIFEST_FILENAME = "manifest.json"
 FEED_FILENAME = "rss.xml"
@@ -42,9 +42,11 @@ def add_episode(
     pub_date_iso: str,
     duration_seconds: int,
     file_size_bytes: int,
+    settings: Settings | None = None,
 ) -> list[dict]:
     """Append a new episode to the manifest, prune anything past the
     retention window (deleting the dropped MP3s), and return the kept list."""
+    settings = settings or default_settings()
     episodes = load_manifest(output_dir)
     episodes.append(
         {
@@ -58,8 +60,8 @@ def add_episode(
     )
     episodes.sort(key=lambda e: e["pub_date"], reverse=True)
 
-    kept = episodes[: config.MAX_EPISODES_IN_FEED]
-    dropped = episodes[config.MAX_EPISODES_IN_FEED :]
+    kept = episodes[: settings.max_episodes_in_feed]
+    dropped = episodes[settings.max_episodes_in_feed :]
 
     for old in dropped:
         old_path = os.path.join(output_dir, EPISODES_DIR, old["mp3_filename"])
@@ -76,15 +78,16 @@ def _format_duration(seconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
-def build_rss(output_dir: str, episodes: list[dict]) -> str:
+def build_rss(output_dir: str, episodes: list[dict], settings: Settings | None = None) -> str:
+    settings = settings or default_settings()
     fg = FeedGenerator()
     fg.load_extension("podcast")
-    fg.title(config.PODCAST_TITLE)
-    fg.link(href=config.PODCAST_BASE_URL, rel="alternate")
-    fg.link(href=f"{config.PODCAST_BASE_URL}/{FEED_FILENAME}", rel="self")
-    fg.description(config.PODCAST_DESCRIPTION)
+    fg.title(settings.podcast_title)
+    fg.link(href=settings.podcast_base_url, rel="alternate")
+    fg.link(href=f"{settings.podcast_base_url}/{FEED_FILENAME}", rel="self")
+    fg.description(settings.podcast_description)
     fg.language("en")
-    fg.podcast.itunes_author(config.PODCAST_AUTHOR)
+    fg.podcast.itunes_author(settings.podcast_author)
     fg.podcast.itunes_category(cat="Technology")
     fg.podcast.itunes_explicit("no")
 
@@ -92,7 +95,7 @@ def build_rss(output_dir: str, episodes: list[dict]) -> str:
     # first (episodes is already sorted that way by add_episode).
     for ep in episodes:
         fe = fg.add_entry()
-        mp3_url = f"{config.PODCAST_BASE_URL}/{EPISODES_DIR}/{ep['mp3_filename']}"
+        mp3_url = f"{settings.podcast_base_url}/{EPISODES_DIR}/{ep['mp3_filename']}"
         fe.id(mp3_url)
         fe.title(ep["title"])
         fe.description(ep["description"])

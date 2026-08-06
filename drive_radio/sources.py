@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import feedparser
 import requests
 
-from . import config
+from .settings import Settings, default_settings
 
 HN_FRONT_PAGE_URL = "https://hn.algolia.com/api/v1/search?tags=front_page"
 
@@ -33,8 +33,7 @@ def _strip_html(text: str) -> str:
     return _TAG_RE.sub("", text).strip()
 
 
-def fetch_hacker_news(count: int = None) -> list[Item]:
-    count = count or config.HN_STORY_COUNT
+def fetch_hacker_news(count: int) -> list[Item]:
     resp = requests.get(HN_FRONT_PAGE_URL, timeout=15)
     resp.raise_for_status()
     hits = resp.json().get("hits", [])
@@ -69,17 +68,18 @@ def fetch_rss_feed(feed_url: str, max_items: int = 8) -> list[Item]:
     return items
 
 
-def fetch_all() -> list[Item]:
+def fetch_all(settings: Settings | None = None) -> list[Item]:
     """Fetch Hacker News plus every configured RSS feed. Feeds that fail to
     load are skipped rather than aborting the whole run."""
+    settings = settings or default_settings()
     items: list[Item] = []
 
     try:
-        items.extend(fetch_hacker_news())
+        items.extend(fetch_hacker_news(settings.hn_story_count))
     except requests.RequestException as exc:
         print(f"warning: failed to fetch Hacker News: {exc}")
 
-    for feed_url in config.RSS_FEEDS:
+    for feed_url in settings.rss_feeds:
         try:
             items.extend(fetch_rss_feed(feed_url))
         except Exception as exc:  # noqa: BLE001 - a single bad feed shouldn't kill the run

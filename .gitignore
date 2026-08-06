@@ -7,3 +7,6 @@ out/
 *.mp3
 !assets/*.mp3
 .DS_Store
+
+# Editable-install build artifacts
+*.egg-info/

@@ -8,7 +8,7 @@ from datetime import date as date_cls
 
 import anthropic
 
-from . import config
+from .settings import Settings, default_settings
 from .sources import Item
 
 SYSTEM_PROMPT = """\
@@ -136,25 +136,31 @@ def _build_user_prompt(items: list[Item]) -> str:
     return "Candidate stories:\n\n" + "\n".join(lines)
 
 
-def _style_for_date(episode_date: date_cls) -> str:
-    return config.STYLE_VARIANTS[episode_date.toordinal() % len(config.STYLE_VARIANTS)]
+def _style_for_date(episode_date: date_cls, style_variants: list[str]) -> str:
+    return style_variants[episode_date.toordinal() % len(style_variants)]
 
 
-def curate(items: list[Item], episode_date: date_cls | None = None, max_expand_attempts: int = 2) -> CurationResult:
-    client = anthropic.Anthropic()
+def curate(
+    items: list[Item],
+    episode_date: date_cls | None = None,
+    max_expand_attempts: int = 2,
+    settings: Settings | None = None,
+) -> CurationResult:
+    settings = settings or default_settings()
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     episode_date = episode_date or date_cls.today()
 
     system = SYSTEM_PROMPT.format(
-        host_a=config.HOST_A_NAME,
-        host_b=config.HOST_B_NAME,
-        style_hint=_style_for_date(episode_date),
-        word_min=config.TARGET_WORD_COUNT_MIN,
-        word_max=config.TARGET_WORD_COUNT_MAX,
+        host_a=settings.host_a_name,
+        host_b=settings.host_b_name,
+        style_hint=_style_for_date(episode_date, settings.style_variants),
+        word_min=settings.target_word_count_min,
+        word_max=settings.target_word_count_max,
     )
-    min_acceptable = int(config.TARGET_WORD_COUNT_MIN * MIN_ACCEPTABLE_WORDS_FRACTION)
+    min_acceptable = int(settings.target_word_count_min * MIN_ACCEPTABLE_WORDS_FRACTION)
 
     messages = [{"role": "user", "content": _build_user_prompt(items)}]
-    response, tool_use, data = _call_and_get_tool_use(client, system, messages)
+    response, tool_use, data = _call_and_get_tool_use(client, system, messages, settings)
     selected = data["selected"]
     result = CurationResult(segments=data["segments"], selected=selected)
 
@@ -177,17 +183,17 @@ def curate(items: list[Item], episode_date: date_cls | None = None, max_expand_a
                         "type": "text",
                         "text": (
                             f"That script was only {result.word_count} words, well under the "
-                            f"{config.TARGET_WORD_COUNT_MIN} word minimum. Keep the same story "
+                            f"{settings.target_word_count_min} word minimum. Keep the same story "
                             "selection and the same banter style, but expand the dialogue with "
                             "more back-and-forth, more context, and more of the hosts' reactions "
-                            f"so the full script reaches at least {config.TARGET_WORD_COUNT_MIN} "
+                            f"so the full script reaches at least {settings.target_word_count_min} "
                             "words. Call write_episode again with the complete expanded dialogue."
                         ),
                     },
                 ],
             }
         )
-        response, tool_use, data = _call_and_get_tool_use(client, system, messages)
+        response, tool_use, data = _call_and_get_tool_use(client, system, messages, settings)
         # Story selection doesn't change on an expand retry — only trust the
         # freshly returned segments, not whatever (if anything) came back in
         # "selected" this time.
@@ -196,9 +202,11 @@ def curate(items: list[Item], episode_date: date_cls | None = None, max_expand_a
     return result
 
 
-def _call_and_get_tool_use(client: anthropic.Anthropic, system: str, messages: list[dict]):
+def _call_and_get_tool_use(
+    client: anthropic.Anthropic, system: str, messages: list[dict], settings: Settings
+):
     response = client.messages.create(
-        model=config.ANTHROPIC_MODEL,
+        model=settings.anthropic_model,
         max_tokens=8192,
         system=system,
         tools=[WRITE_EPISODE_TOOL],

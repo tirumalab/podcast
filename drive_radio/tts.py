@@ -3,7 +3,7 @@ open-weight, self-hosted TTS model (runs on CPU, no per-minute API cost).
 
 Each speaker gets a distinct voice. Kokoro has no natural-language emotion
 control, so each line's "delivery" tag is mapped to a speaking-speed
-multiplier instead (config.DELIVERY_SPEED_KEYWORDS) as a cruder proxy for
+multiplier instead (Settings.delivery_speed_keywords) as a cruder proxy for
 energy. A looped background music bed can also be mixed in under the whole
 episode.
 
@@ -20,7 +20,7 @@ import os
 import numpy as np
 from pydub import AudioSegment
 
-from . import config
+from .settings import Settings, default_settings
 
 SAMPLE_RATE = 24000
 
@@ -66,23 +66,28 @@ def _fix_espeak_paths() -> None:
     EspeakWrapper.set_data_path(data)
 
 
-from kokoro import KPipeline  # noqa: E402 (must precede the espeak path fix)
-
-_fix_espeak_paths()
-
-_pipeline = KPipeline(lang_code=config.KOKORO_LANG_CODE)
-
-VOICE_BY_SPEAKER = {
-    "A": config.HOST_A_VOICE,
-    "B": config.HOST_B_VOICE,
-}
+_pipelines: dict[str, object] = {}
 
 
-def _speed_for_delivery(delivery: str) -> float:
+def _get_pipeline(lang_code: str):
+    """Build (once per language) and reuse the Kokoro pipeline — loading it is
+    expensive, so it's cached rather than rebuilt per user. Deferred to first
+    use so importing this module doesn't require espeak-ng to be installed."""
+    if lang_code not in _pipelines:
+        # Importing kokoro pulls in misaki, which points espeak-ng at a broken
+        # bundled data path — repair it before constructing the pipeline.
+        from kokoro import KPipeline
+
+        _fix_espeak_paths()
+        _pipelines[lang_code] = KPipeline(lang_code=lang_code)
+    return _pipelines[lang_code]
+
+
+def _speed_for_delivery(delivery: str, delivery_speed_keywords: dict[str, float]) -> float:
     delivery_lower = delivery.lower()
     matches = [
         multiplier
-        for keyword, multiplier in config.DELIVERY_SPEED_KEYWORDS.items()
+        for keyword, multiplier in delivery_speed_keywords.items()
         if keyword in delivery_lower
     ]
     return sum(matches) / len(matches) if matches else 1.0
@@ -98,19 +103,20 @@ def _audio_array_to_segment(audio: np.ndarray) -> AudioSegment:
     )
 
 
-def _synthesize_turn(speaker: str, text: str, delivery: str) -> AudioSegment:
-    voice = VOICE_BY_SPEAKER[speaker]
-    speed = _speed_for_delivery(delivery)
-    chunks = [result.audio for result in _pipeline(text, voice=voice, speed=speed)]
+def _synthesize_turn(speaker: str, text: str, delivery: str, settings: Settings) -> AudioSegment:
+    voice = settings.host_a_voice if speaker == "A" else settings.host_b_voice
+    speed = _speed_for_delivery(delivery, settings.delivery_speed_keywords)
+    pipeline = _get_pipeline(settings.kokoro_lang_code)
+    chunks = [result.audio for result in pipeline(text, voice=voice, speed=speed)]
     audio = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
     return _audio_array_to_segment(audio.numpy() if hasattr(audio, "numpy") else audio)
 
 
-def _add_background_music(episode: AudioSegment) -> AudioSegment:
-    if not (config.BACKGROUND_MUSIC and os.path.exists(config.BACKGROUND_MUSIC)):
+def _add_background_music(episode: AudioSegment, settings: Settings) -> AudioSegment:
+    if not (settings.background_music and os.path.exists(settings.background_music)):
         return episode
 
-    music = AudioSegment.from_file(config.BACKGROUND_MUSIC) + config.BACKGROUND_MUSIC_GAIN_DB
+    music = AudioSegment.from_file(settings.background_music) + settings.background_music_gain_db
 
     looped = AudioSegment.empty()
     while len(looped) < len(episode):
@@ -120,7 +126,9 @@ def _add_background_music(episode: AudioSegment) -> AudioSegment:
     return looped.overlay(episode)
 
 
-def synthesize_episode(segments: list[dict], output_path: str) -> tuple[str, int]:
+def synthesize_episode(
+    segments: list[dict], output_path: str, settings: Settings | None = None
+) -> tuple[str, int]:
     """Synthesize the two-host dialogue to speech, alternating voices and
     delivery-driven pacing per speaker with a short gap between turns, mix
     in a looped background music bed if configured, and stitch it (with
@@ -128,22 +136,23 @@ def synthesize_episode(segments: list[dict], output_path: str) -> tuple[str, int
 
     Returns (output_path, duration_seconds).
     """
-    gap = AudioSegment.silent(duration=config.TURN_GAP_MS)
+    settings = settings or default_settings()
+    gap = AudioSegment.silent(duration=settings.turn_gap_ms)
 
     episode = AudioSegment.empty()
 
-    if config.INTRO_CLIP and os.path.exists(config.INTRO_CLIP):
-        episode += AudioSegment.from_file(config.INTRO_CLIP)
+    if settings.intro_clip and os.path.exists(settings.intro_clip):
+        episode += AudioSegment.from_file(settings.intro_clip)
 
     for i, seg in enumerate(segments):
-        episode += _synthesize_turn(seg["speaker"], seg["text"], seg["delivery"])
+        episode += _synthesize_turn(seg["speaker"], seg["text"], seg["delivery"], settings)
         if i < len(segments) - 1:
             episode += gap
 
-    if config.OUTRO_CLIP and os.path.exists(config.OUTRO_CLIP):
-        episode += AudioSegment.from_file(config.OUTRO_CLIP)
+    if settings.outro_clip and os.path.exists(settings.outro_clip):
+        episode += AudioSegment.from_file(settings.outro_clip)
 
-    episode = _add_background_music(episode)
+    episode = _add_background_music(episode, settings)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     episode.export(output_path, format="mp3", bitrate="96k")

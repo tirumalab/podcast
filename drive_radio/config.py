@@ -1,4 +1,9 @@
 import os
+from pathlib import Path
+
+# Asset paths are resolved against the repo root rather than the current
+# working directory, so the pipeline works no matter where it's invoked from.
+_ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 
 # Default set of tech/industry RSS feeds. Add or remove URLs here to change
 # what the show pulls from — no code changes needed elsewhere.
@@ -59,13 +64,13 @@ TURN_GAP_MS = 250
 
 # Optional royalty-free bumper clips stitched onto the front/back of the
 # episode. Set to None (or delete the files) to skip bumpers entirely.
-INTRO_CLIP = "assets/intro.mp3"
-OUTRO_CLIP = "assets/outro.mp3"
+INTRO_CLIP = str(_ASSETS_DIR / "intro.mp3")
+OUTRO_CLIP = str(_ASSETS_DIR / "outro.mp3")
 
 # Optional background music bed, looped under the whole episode (including
 # the bumpers) at a reduced volume so it sits behind the dialogue instead of
 # competing with it. Set to None (or delete the file) to skip it entirely.
-BACKGROUND_MUSIC = "assets/background_music.mp3"
+BACKGROUND_MUSIC = str(_ASSETS_DIR / "background_music.mp3")
 BACKGROUND_MUSIC_GAIN_DB = -22
 
 # Base URL the podcast feed and audio files are published at, e.g.

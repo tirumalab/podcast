@@ -1,7 +1,3 @@
-anthropic>=0.40.0
-kokoro>=0.9.4
-feedparser>=6.0.11
-requests>=2.32.0
-feedgen>=1.0.0
-pydub>=0.25.1
-python-dateutil>=2.9.0
+# Dependencies are declared in pyproject.toml. This file stays so CI and the
+# README's `pip install -r requirements.txt` keep working unchanged.
+-e .

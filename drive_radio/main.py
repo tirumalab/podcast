@@ -13,8 +13,9 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from . import config, feed, sources, tts
+from . import feed, sources, tts
 from .curate import curate
+from .settings import Settings, default_settings
 
 
 def _build_description(selected: list[dict]) -> str:
@@ -22,9 +23,11 @@ def _build_description(selected: list[dict]) -> str:
     return "Today's stories:\n" + "\n".join(lines)
 
 
-def run(dry_run: bool = False) -> None:
+def run(dry_run: bool = False, settings: Settings | None = None) -> None:
+    settings = settings or default_settings()
+
     print("Fetching candidate stories...")
-    items = sources.fetch_all()
+    items = sources.fetch_all(settings)
     if not items:
         print("error: no candidate stories fetched from any source", file=sys.stderr)
         sys.exit(1)
@@ -33,7 +36,7 @@ def run(dry_run: bool = False) -> None:
     now = datetime.now(timezone.utc)
 
     print("Asking Claude to curate and write today's dialogue...")
-    result = curate(items, episode_date=now.date())
+    result = curate(items, episode_date=now.date(), settings=settings)
     print(f"Script ready: {result.word_count} words, {len(result.selected)} stories selected.")
 
     if dry_run:
@@ -41,7 +44,7 @@ def run(dry_run: bool = False) -> None:
         for item in result.selected:
             print(f"- {item['title']} ({item['url']})\n  {item['blurb']}")
         print("\n--- Dialogue ---\n")
-        names = {"A": config.HOST_A_NAME, "B": config.HOST_B_NAME}
+        names = {"A": settings.host_a_name, "B": settings.host_b_name}
         for seg in result.segments:
             print(f"{names[seg['speaker']]} [{seg['delivery']}]: {seg['text']}")
         return
@@ -49,29 +52,30 @@ def run(dry_run: bool = False) -> None:
     date_str = now.strftime("%Y-%m-%d")
     mp3_filename = f"{date_str}.mp3"
 
-    episodes_dir = os.path.join(config.OUTPUT_DIR, feed.EPISODES_DIR)
+    episodes_dir = os.path.join(settings.output_dir, feed.EPISODES_DIR)
     os.makedirs(episodes_dir, exist_ok=True)
     mp3_path = os.path.join(episodes_dir, mp3_filename)
 
     print("Synthesizing audio with Kokoro...")
-    mp3_path, duration_seconds = tts.synthesize_episode(result.segments, mp3_path)
+    mp3_path, duration_seconds = tts.synthesize_episode(result.segments, mp3_path, settings)
     file_size_bytes = os.path.getsize(mp3_path)
     print(f"Audio ready: {duration_seconds // 60}m{duration_seconds % 60:02d}s, {file_size_bytes // 1024} KB.")
 
-    title = f"{config.PODCAST_TITLE} — {now.strftime('%B %-d, %Y')}"
+    title = f"{settings.podcast_title} — {now.strftime('%B %-d, %Y')}"
     description = _build_description(result.selected)
 
     print("Updating episode manifest and RSS feed...")
     episodes = feed.add_episode(
-        output_dir=config.OUTPUT_DIR,
+        output_dir=settings.output_dir,
         mp3_filename=mp3_filename,
         title=title,
         description=description,
         pub_date_iso=now.isoformat(),
         duration_seconds=duration_seconds,
         file_size_bytes=file_size_bytes,
+        settings=settings,
     )
-    feed_path = feed.build_rss(config.OUTPUT_DIR, episodes)
+    feed_path = feed.build_rss(settings.output_dir, episodes, settings)
     print(f"Wrote {feed_path} with {len(episodes)} episode(s).")
 
 
