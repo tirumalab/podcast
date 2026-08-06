@@ -9,11 +9,20 @@ app needed.
 
 Pipeline: fetch stories → Claude picks ~5-6 and writes a two-host dialogue
 script with curiosity hooks, real banter, and a per-line emotional
-"delivery" tag → OpenAI's `gpt-4o-mini-tts` performs each host's lines in a
-distinct voice, steered by that delivery tag so it actually sounds excited,
-amused, dry, etc. instead of flat → a looped background music bed gets
-mixed in under the whole episode → an episode manifest + `rss.xml` get
-updated and published to GitHub Pages via GitHub Actions on a daily cron.
+"delivery" tag → [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) (a
+free, open-weight, self-hosted TTS model — no per-minute API cost) performs
+each host's lines in a distinct voice, with that delivery tag mapped to a
+speaking-speed variation as a proxy for energy → a looped background music
+bed gets mixed in under the whole episode → an episode manifest + `rss.xml`
+get updated and published to GitHub Pages via GitHub Actions on a daily
+cron.
+
+Kokoro has no natural-language emotion control the way some paid TTS APIs
+do (e.g. OpenAI's `gpt-4o-mini-tts`, which this project used before
+switching) — it can't be told to "sound excited." The delivery-to-speed
+mapping in `config.DELIVERY_SPEED_KEYWORDS` is a cruder stand-in: faster
+pacing for excited/urgent lines, slower for dry/serious ones. Worth knowing
+if you ever compare the two.
 
 Actual songs aren't embedded — hosting copyrighted music in a
 redistributable RSS feed is a real licensing problem. The background bed
@@ -30,14 +39,14 @@ copyright issue entirely since nothing gets redistributed.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-brew install ffmpeg   # pydub needs ffmpeg on the PATH
+brew install ffmpeg espeak-ng   # pydub needs ffmpeg; Kokoro needs espeak-ng for phonemization
 ```
 
-Set your API keys for local runs:
+Set your API key for local runs (only Claude is a paid API now — TTS is
+local/free via Kokoro, which downloads its model weights on first run):
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
 ```
 
 Try a dry run first — it fetches and curates but skips TTS, so you can sanity
@@ -68,7 +77,7 @@ git push -u origin main
 ### 3. Configure the repo on GitHub
 
 - **Secrets** (Settings → Secrets and variables → Actions → *Secrets* tab):
-  add `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`.
+  add `ANTHROPIC_API_KEY`.
 - **Variable** (same page, *Variables* tab): add `PODCAST_BASE_URL` set to
   `https://<your-github-username>.github.io/<repo-name>`.
 - Trigger the workflow once manually: Actions tab → "Daily Drive Radio
@@ -92,11 +101,15 @@ Follow a Show by URL; Overcast: "+" → Add URL; similar in most players).
 
 - **Sources**: edit `RSS_FEEDS` in [`drive_radio/config.py`](drive_radio/config.py).
   Add your own newsletters/feeds as you get RSS URLs for them.
-- **Hosts, voices & personas**: `HOST_A_NAME` / `HOST_A_VOICE` /
-  `HOST_A_PERSONA` and the `HOST_B_*` equivalents in the same file (OpenAI
-  voices: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer,
-  verse, marin, cedar). The persona strings feed directly into the
-  TTS `instructions`, so rewriting them changes how each host sounds.
+- **Hosts & voices**: `HOST_A_NAME` / `HOST_A_VOICE` and `HOST_B_*`
+  equivalents in the same file. Voice IDs are Kokoro's — see the
+  [full voice list](https://huggingface.co/hexgrad/Kokoro-82M/tree/main/voices)
+  (prefix convention: first letter is language, second is gender, e.g.
+  `am_onyx` = American male, `af_heart` = American female).
+- **Delivery/energy mapping**: `DELIVERY_SPEED_KEYWORDS` maps words that
+  might show up in a line's delivery tag (excited, urgent, dry, serious,
+  etc.) to a speed multiplier — add keywords or adjust the multipliers to
+  taste.
 - **Daily format variety**: `STYLE_VARIANTS` is a list of tone/format notes
   (rapid-fire, investigative mystery, debate, etc.) picked deterministically
   by date — add, remove, or rewrite entries to change the rotation.
@@ -121,8 +134,7 @@ Follow a Show by URL; Overcast: "+" → Add URL; similar in most players).
 
 ## Costs
 
-Roughly pennies per day for a personal feed: `gpt-4o-mini-tts` runs about
-$0.015 per minute of audio (~$0.25-0.30 per 18-minute episode), and the
-Claude curation call is a single request per day (plus rare retries if a
-script comes back short). GitHub Actions and Pages are free for a public
-repo at this volume.
+Close to $0/day for a personal feed. TTS is free — Kokoro runs locally on
+CPU (in GitHub Actions' free compute for public repos), no per-minute API
+charge. The only paid API left is the Claude curation call, a single cheap
+request per day (plus rare retries if a script comes back short).

@@ -1,83 +1,109 @@
-"""Turn the two-host dialogue into a single MP3 via OpenAI TTS.
+"""Turn the two-host dialogue into a single MP3 using Kokoro — a free,
+open-weight, self-hosted TTS model (runs on CPU, no per-minute API cost).
 
-Each speaker gets a distinct voice, and each line is synthesized with an
-`instructions` prompt (persona + that line's tagged emotional delivery) so
-gpt-4o-mini-tts actually performs it instead of reading it flat. A looped
-background music bed can also be mixed in under the whole episode.
+Each speaker gets a distinct voice. Kokoro has no natural-language emotion
+control, so each line's "delivery" tag is mapped to a speaking-speed
+multiplier instead (config.DELIVERY_SPEED_KEYWORDS) as a cruder proxy for
+energy. A looped background music bed can also be mixed in under the whole
+episode.
+
+Kokoro's dependency chain (via `misaki`) misconfigures its espeak-ng
+phonemizer backend at import time on some platforms — see
+_fix_espeak_paths() below, which must run after `from kokoro import
+KPipeline` to take effect.
 """
 
-import io
+import ctypes.util
+import glob
 import os
-import re
 
-from openai import OpenAI
+import numpy as np
 from pydub import AudioSegment
 
 from . import config
 
-MAX_CHARS_PER_REQUEST = 3500
+SAMPLE_RATE = 24000
+
+
+def _find_espeak_library() -> str | None:
+    found = ctypes.util.find_library("espeak-ng")
+    if found:
+        return found
+    candidates = (
+        glob.glob("/opt/homebrew/Cellar/espeak-ng/*/lib/libespeak-ng.dylib")
+        + glob.glob("/usr/local/Cellar/espeak-ng/*/lib/libespeak-ng.dylib")
+        + glob.glob("/usr/lib/*/libespeak-ng.so*")
+        + glob.glob("/usr/lib/libespeak-ng.so*")
+    )
+    return candidates[0] if candidates else None
+
+
+def _find_espeak_data() -> str | None:
+    candidates = (
+        glob.glob("/opt/homebrew/Cellar/espeak-ng/*/share/espeak-ng-data")
+        + glob.glob("/usr/local/Cellar/espeak-ng/*/share/espeak-ng-data")
+        + glob.glob("/usr/lib/*/espeak-ng-data")
+        + glob.glob("/usr/share/espeak-ng-data")
+    )
+    return candidates[0] if candidates else None
+
+
+def _fix_espeak_paths() -> None:
+    """Kokoro's `misaki` dependency points espeak-ng at its own bundled data
+    directory at import time, which is broken on some platforms/versions.
+    Re-point it at a real system espeak-ng install (brew on macOS, apt-get
+    on Ubuntu/CI) after import so it actually resolves."""
+    from phonemizer.backend.espeak.wrapper import EspeakWrapper
+
+    library = _find_espeak_library()
+    data = _find_espeak_data()
+    if not library or not data:
+        raise RuntimeError(
+            "espeak-ng not found. Install it first: `brew install espeak-ng` (macOS) "
+            "or `apt-get install espeak-ng` (Linux/CI)."
+        )
+    EspeakWrapper.set_library(library)
+    EspeakWrapper.set_data_path(data)
+
+
+from kokoro import KPipeline  # noqa: E402 (must precede the espeak path fix)
+
+_fix_espeak_paths()
+
+_pipeline = KPipeline(lang_code=config.KOKORO_LANG_CODE)
 
 VOICE_BY_SPEAKER = {
     "A": config.HOST_A_VOICE,
     "B": config.HOST_B_VOICE,
 }
 
-PERSONA_BY_SPEAKER = {
-    "A": (config.HOST_A_NAME, config.HOST_A_PERSONA),
-    "B": (config.HOST_B_NAME, config.HOST_B_PERSONA),
-}
+
+def _speed_for_delivery(delivery: str) -> float:
+    delivery_lower = delivery.lower()
+    matches = [
+        multiplier
+        for keyword, multiplier in config.DELIVERY_SPEED_KEYWORDS.items()
+        if keyword in delivery_lower
+    ]
+    return sum(matches) / len(matches) if matches else 1.0
 
 
-def _split_into_chunks(text: str, max_chars: int = MAX_CHARS_PER_REQUEST) -> list[str]:
-    """Split on sentence boundaries, keeping each chunk under max_chars."""
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-
-    chunks: list[str] = []
-    current = ""
-    for sentence in sentences:
-        candidate = f"{current} {sentence}".strip()
-        if len(candidate) > max_chars and current:
-            chunks.append(current)
-            current = sentence
-        else:
-            current = candidate
-    if current:
-        chunks.append(current)
-    return chunks
-
-
-def _build_instructions(speaker: str, delivery: str) -> str:
-    name, persona = PERSONA_BY_SPEAKER[speaker]
-    return (
-        f"You are {name}, {persona}. This one line is a single beat in a live, "
-        f"unscripted-sounding podcast conversation. Perform it as genuinely {delivery} — "
-        "actually sound that way, don't just read the words at a neutral pace. Vary your "
-        "pitch and pace the way a real person talking does: speed up on excitement, slow "
-        "down and land on key words for emphasis, let your pitch actually rise on a "
-        "surprise or drop for something serious. Put a real micro-pause before a punchline "
-        "or a surprising word instead of running straight through it. This should sound like "
-        "a person reacting in the moment, not a voiceover artist narrating a script."
+def _audio_array_to_segment(audio: np.ndarray) -> AudioSegment:
+    pcm16 = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
+    return AudioSegment(
+        data=pcm16.tobytes(),
+        sample_width=2,
+        frame_rate=SAMPLE_RATE,
+        channels=1,
     )
 
 
-def _synthesize_text(client: OpenAI, text: str, voice: str, instructions: str) -> AudioSegment:
-    response = client.audio.speech.create(
-        model=config.TTS_MODEL,
-        voice=voice,
-        input=text,
-        instructions=instructions,
-    )
-    audio_bytes = response.read()
-    return AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
-
-
-def _synthesize_turn(client: OpenAI, speaker: str, text: str, delivery: str) -> AudioSegment:
+def _synthesize_turn(speaker: str, text: str, delivery: str) -> AudioSegment:
     voice = VOICE_BY_SPEAKER[speaker]
-    instructions = _build_instructions(speaker, delivery)
-    turn = AudioSegment.empty()
-    for chunk in _split_into_chunks(text):
-        turn += _synthesize_text(client, chunk, voice, instructions)
-    return turn
+    speed = _speed_for_delivery(delivery)
+    chunks = [result.audio for result in _pipeline(text, voice=voice, speed=speed)]
+    audio = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    return _audio_array_to_segment(audio.numpy() if hasattr(audio, "numpy") else audio)
 
 
 def _add_background_music(episode: AudioSegment) -> AudioSegment:
@@ -96,14 +122,12 @@ def _add_background_music(episode: AudioSegment) -> AudioSegment:
 
 def synthesize_episode(segments: list[dict], output_path: str) -> tuple[str, int]:
     """Synthesize the two-host dialogue to speech, alternating voices and
-    delivery per speaker with a short gap between turns, mix in a looped
-    background music bed if configured, and stitch it (with optional
-    intro/outro bumpers) into a single MP3 at output_path.
+    delivery-driven pacing per speaker with a short gap between turns, mix
+    in a looped background music bed if configured, and stitch it (with
+    optional intro/outro bumpers) into a single MP3 at output_path.
 
     Returns (output_path, duration_seconds).
     """
-    client = OpenAI()
-
     gap = AudioSegment.silent(duration=config.TURN_GAP_MS)
 
     episode = AudioSegment.empty()
@@ -112,7 +136,7 @@ def synthesize_episode(segments: list[dict], output_path: str) -> tuple[str, int
         episode += AudioSegment.from_file(config.INTRO_CLIP)
 
     for i, seg in enumerate(segments):
-        episode += _synthesize_turn(client, seg["speaker"], seg["text"], seg["delivery"])
+        episode += _synthesize_turn(seg["speaker"], seg["text"], seg["delivery"])
         if i < len(segments) - 1:
             episode += gap
 

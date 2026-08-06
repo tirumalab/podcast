@@ -1,6 +1,6 @@
 """Orchestrates one run of the daily Drive Radio pipeline:
 
-fetch candidate stories -> Claude picks & scripts the episode -> OpenAI TTS
+fetch candidate stories -> Claude picks & scripts the episode -> Kokoro
 synthesizes it -> the episode manifest and RSS feed are updated.
 
 Usage:
@@ -53,7 +53,7 @@ def run(dry_run: bool = False) -> None:
     os.makedirs(episodes_dir, exist_ok=True)
     mp3_path = os.path.join(episodes_dir, mp3_filename)
 
-    print("Synthesizing audio with OpenAI TTS...")
+    print("Synthesizing audio with Kokoro...")
     mp3_path, duration_seconds = tts.synthesize_episode(result.segments, mp3_path)
     file_size_bytes = os.path.getsize(mp3_path)
     print(f"Audio ready: {duration_seconds // 60}m{duration_seconds % 60:02d}s, {file_size_bytes // 1024} KB.")

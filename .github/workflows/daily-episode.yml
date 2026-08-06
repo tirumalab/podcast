@@ -30,8 +30,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg and espeak-ng
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng
+
+      - name: Cache Kokoro model weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-kokoro-82m
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -39,7 +45,6 @@ jobs:
       - name: Generate today's episode
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PODCAST_BASE_URL: ${{ vars.PODCAST_BASE_URL }}
         run: |
           mkdir -p out

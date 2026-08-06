@@ -19,24 +19,40 @@ TARGET_WORD_COUNT_MAX = 2700
 # Claude model used to pick stories and write the narration script.
 ANTHROPIC_MODEL = "claude-sonnet-5"
 
-# OpenAI TTS settings. The episode is a two-host banter dialogue (think "The
-# Best One Yet"), each host synthesized with its own distinct voice.
-# gpt-4o-mini-tts (unlike tts-1) supports an "instructions" prompt that
-# steers tone/energy/pacing per request, which is how each line gets real
-# delivery instead of a flat reading. Pick any two voices: alloy, ash,
-# ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse, marin, cedar.
-TTS_MODEL = "gpt-4o-mini-tts"
+# TTS settings. The episode is a two-host banter dialogue (think "The Best
+# One Yet"), each host synthesized with its own distinct voice using Kokoro
+# (hexgrad/Kokoro-82M) — a free, open-weight, self-hosted model that runs on
+# CPU, so there's no per-minute API cost. Unlike gpt-4o-mini-tts, Kokoro has
+# no natural-language "sound excited" style control; the closest available
+# proxy is speaking speed, applied via DELIVERY_SPEED_KEYWORDS below. Voice
+# IDs follow Kokoro's convention: first letter is language (a=American
+# English, b=British, etc.), second is gender (f/m). Full list:
+# https://huggingface.co/hexgrad/Kokoro-82M/tree/main/voices
+KOKORO_LANG_CODE = "a"
 HOST_A_NAME = "Turbo"
-HOST_A_VOICE = "onyx"
-HOST_A_PERSONA = (
-    "a confident, quick-talking podcast co-host who sets up stories with context and momentum"
-)
+HOST_A_VOICE = "am_onyx"
 HOST_B_NAME = "Nova"
-HOST_B_VOICE = "coral"  # OpenAI describes coral as its "energetic" voice
-HOST_B_PERSONA = (
-    "a witty, reactive podcast co-host who riffs, jokes, and asks the questions the listener "
-    "is thinking"
-)
+HOST_B_VOICE = "af_heart"
+
+# Crude delivery-to-speed mapping: if a segment's "delivery" tag contains any
+# of these keywords, its speed multiplier is the average of all matches;
+# otherwise it defaults to 1.0 (normal pace). Faster = more excited/urgent,
+# slower = more dry/serious/hushed.
+DELIVERY_SPEED_KEYWORDS = {
+    "excited": 1.15,
+    "urgent": 1.2,
+    "shocked": 1.15,
+    "amused": 1.08,
+    "thrilled": 1.15,
+    "hyped": 1.18,
+    "hushed": 0.9,
+    "intrigue": 0.92,
+    "dry": 0.92,
+    "deadpan": 0.9,
+    "skeptical": 0.93,
+    "serious": 0.92,
+    "somber": 0.88,
+}
 
 # Silence inserted between speaker turns, for a natural hand-off feel.
 TURN_GAP_MS = 250
