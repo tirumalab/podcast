@@ -1,19 +1,26 @@
 # Drive Radio
 
 A personal ~15-18 minute morning briefing, generated fresh every day from
-Hacker News + a set of tech/industry RSS feeds, narrated by text-to-speech,
-and published as a private podcast RSS feed you subscribe to once in your
+Hacker News + a set of tech/industry RSS feeds, performed as a two-host
+banter dialogue (think "The Best One Yet" energy) by text-to-speech, and
+published as a private podcast RSS feed you subscribe to once in your
 podcast app of choice (Apple Podcasts, Overcast, Spotify, etc.) — no custom
 app needed.
 
-Pipeline: fetch stories → Claude picks ~5-6 and writes a conversational
-script → OpenAI TTS narrates it → an episode manifest + `rss.xml` get
+Pipeline: fetch stories → Claude picks ~5-6 and writes a two-host dialogue
+script with curiosity hooks, real banter, and a per-line emotional
+"delivery" tag → OpenAI's `gpt-4o-mini-tts` performs each host's lines in a
+distinct voice, steered by that delivery tag so it actually sounds excited,
+amused, dry, etc. instead of flat → a looped background music bed gets
+mixed in under the whole episode → an episode manifest + `rss.xml` get
 updated and published to GitHub Pages via GitHub Actions on a daily cron.
 
-Music isn't embedded in this version — hosting copyrighted songs in a
-redistributable RSS feed is a real licensing problem. A future native-app
-version could interleave actual song playback via a Spotify/Apple Music SDK
-instead, which sidesteps that issue since nothing gets redistributed.
+Actual songs aren't embedded — hosting copyrighted music in a
+redistributable RSS feed is a real licensing problem. The background bed
+should be a royalty-free instrumental loop (see setup below), which is fine
+to redistribute. A future native-app version could interleave actual song
+playback via a Spotify/Apple Music SDK instead, which sidesteps the
+copyright issue entirely since nothing gets redistributed.
 
 ## One-time setup
 
@@ -85,12 +92,28 @@ Follow a Show by URL; Overcast: "+" → Add URL; similar in most players).
 
 - **Sources**: edit `RSS_FEEDS` in [`drive_radio/config.py`](drive_radio/config.py).
   Add your own newsletters/feeds as you get RSS URLs for them.
-- **Voice**: `TTS_VOICE` in the same file (OpenAI TTS voices: alloy, echo,
-  fable, onyx, nova, shimmer).
+- **Hosts, voices & personas**: `HOST_A_NAME` / `HOST_A_VOICE` /
+  `HOST_A_PERSONA` and the `HOST_B_*` equivalents in the same file (OpenAI
+  voices: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer,
+  verse, marin, cedar). The persona strings feed directly into the
+  TTS `instructions`, so rewriting them changes how each host sounds.
+- **Daily format variety**: `STYLE_VARIANTS` is a list of tone/format notes
+  (rapid-fire, investigative mystery, debate, etc.) picked deterministically
+  by date — add, remove, or rewrite entries to change the rotation.
 - **Episode length**: `TARGET_WORD_COUNT_MIN` / `_MAX`.
 - **Bumper music**: drop royalty-free clips at `assets/intro.mp3` and
   `assets/outro.mp3` — they're stitched onto the episode automatically if
   present, skipped otherwise.
+- **Background music bed**: drop a royalty-free instrumental loop at
+  `assets/background_music.mp3` — it's looped under the whole episode
+  (including bumpers) at a reduced volume automatically if present, skipped
+  otherwise. Good free sources: the
+  [YouTube Audio Library](https://www.youtube.com/audiolibrary/music) (no
+  attribution required) or [Pixabay Music](https://pixabay.com/music/). Pick
+  something instrumental and fairly neutral in energy — it's playing
+  underneath talking the entire time. `BACKGROUND_MUSIC_GAIN_DB` controls
+  how far it's ducked below the dialogue (more negative = quieter); start at
+  -22 and adjust after listening to one episode.
 - **Schedule**: the cron line in
   [`.github/workflows/daily-episode.yml`](.github/workflows/daily-episode.yml)
   is in UTC and doesn't auto-adjust for daylight saving — nudge the hour
@@ -98,7 +121,8 @@ Follow a Show by URL; Overcast: "+" → Add URL; similar in most players).
 
 ## Costs
 
-Roughly pennies per day for a personal feed: OpenAI TTS is about $0.015 per
-1,000 characters (~$0.20-0.30 per 18-minute episode), and the Claude curation
-call is a single request per day. GitHub Actions and Pages are free for a
-public repo at this volume.
+Roughly pennies per day for a personal feed: `gpt-4o-mini-tts` runs about
+$0.015 per minute of audio (~$0.25-0.30 per 18-minute episode), and the
+Claude curation call is a single request per day (plus rare retries if a
+script comes back short). GitHub Actions and Pages are free for a public
+repo at this volume.

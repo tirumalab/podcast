@@ -6,3 +6,4 @@ venv/
 out/
 *.mp3
 !assets/*.mp3
+.DS_Store

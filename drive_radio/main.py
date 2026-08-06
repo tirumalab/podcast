@@ -30,19 +30,22 @@ def run(dry_run: bool = False) -> None:
         sys.exit(1)
     print(f"Fetched {len(items)} candidate stories.")
 
-    print("Asking Claude to curate and write the script...")
-    result = curate(items)
+    now = datetime.now(timezone.utc)
+
+    print("Asking Claude to curate and write today's dialogue...")
+    result = curate(items, episode_date=now.date())
     print(f"Script ready: {result.word_count} words, {len(result.selected)} stories selected.")
 
     if dry_run:
         print("\n--- Selected stories ---")
         for item in result.selected:
             print(f"- {item['title']} ({item['url']})\n  {item['blurb']}")
-        print("\n--- Script ---\n")
-        print(result.script)
+        print("\n--- Dialogue ---\n")
+        names = {"A": config.HOST_A_NAME, "B": config.HOST_B_NAME}
+        for seg in result.segments:
+            print(f"{names[seg['speaker']]} [{seg['delivery']}]: {seg['text']}")
         return
 
-    now = datetime.now(timezone.utc)
     date_str = now.strftime("%Y-%m-%d")
     mp3_filename = f"{date_str}.mp3"
 
@@ -51,7 +54,7 @@ def run(dry_run: bool = False) -> None:
     mp3_path = os.path.join(episodes_dir, mp3_filename)
 
     print("Synthesizing audio with OpenAI TTS...")
-    mp3_path, duration_seconds = tts.synthesize_episode(result.script, mp3_path)
+    mp3_path, duration_seconds = tts.synthesize_episode(result.segments, mp3_path)
     file_size_bytes = os.path.getsize(mp3_path)
     print(f"Audio ready: {duration_seconds // 60}m{duration_seconds % 60:02d}s, {file_size_bytes // 1024} KB.")
 
