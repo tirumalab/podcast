@@ -50,6 +50,21 @@ jobs:
           mkdir -p out
           python -m drive_radio.main
 
+      # Multi-tenant is new and still being proven out — continue-on-error
+      # so a bug here can never block the single-user path above (the
+      # owner's actual daily feed) from publishing. Nothing pulled from
+      # Supabase here is a credential yet (no per-user API keys until BYOK
+      # ships), so no ::add-mask:: is needed for now — revisit this the
+      # moment that changes.
+      - name: Generate episodes for app users (multi-tenant)
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PODCAST_BASE_URL: ${{ vars.PODCAST_BASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m drive_radio.multi_tenant
+
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
