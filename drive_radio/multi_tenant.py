@@ -68,12 +68,19 @@ def record_episode(user_id: str, mp3_filename: str, title: str, description: str
                     pub_date_iso: str, duration_seconds: int, file_size_bytes: int) -> None:
     """Best-effort metadata log in Supabase, for observability across users
     without digging through per-user files on gh-pages. A failure here must
-    never break the actual RSS publish, which is what subscribers depend on."""
+    never break the actual RSS publish, which is what subscribers depend on.
+
+    Upserts on (user_id, mp3_filename) — see schema.sql's
+    episodes_user_id_mp3_filename_idx — so a same-day re-run (manual
+    workflow_dispatch landing on top of the scheduled cron, an Actions
+    retry) replaces that day's row instead of inserting a duplicate."""
     supabase_url = os.environ["SUPABASE_URL"]
+    headers = _supabase_headers() | {"Prefer": "resolution=merge-duplicates"}
     try:
         resp = requests.post(
             f"{supabase_url}/rest/v1/episodes",
-            headers=_supabase_headers(),
+            headers=headers,
+            params={"on_conflict": "user_id,mp3_filename"},
             json={
                 "user_id": user_id,
                 "mp3_filename": mp3_filename,

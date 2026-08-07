@@ -132,3 +132,10 @@ create policy "select own episodes"
 
 create index episodes_user_id_pub_date_idx
   on public.episodes (user_id, pub_date desc);
+
+-- Lets multi_tenant.py upsert on (user_id, mp3_filename) instead of blindly
+-- inserting, so a same-day re-run (manual workflow_dispatch landing on top
+-- of the scheduled cron, an Actions retry) replaces that day's row instead
+-- of duplicating it.
+create unique index episodes_user_id_mp3_filename_idx
+  on public.episodes (user_id, mp3_filename);

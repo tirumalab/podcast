@@ -44,10 +44,17 @@ def add_episode(
     file_size_bytes: int,
     settings: Settings | None = None,
 ) -> list[dict]:
-    """Append a new episode to the manifest, prune anything past the
-    retention window (deleting the dropped MP3s), and return the kept list."""
+    """Add today's episode to the manifest, prune anything past the retention
+    window (deleting the dropped MP3s), and return the kept list.
+
+    Replaces any existing entry with the same mp3_filename instead of
+    appending alongside it, so a same-day re-run (a manual workflow_dispatch
+    landing on top of the scheduled cron, an Actions retry, etc.) converges
+    to one manifest entry per day instead of duplicating it — the mp3 file
+    itself already gets overwritten by such a re-run, so the old manifest
+    entry would otherwise point at audio that no longer matches it."""
     settings = settings or default_settings()
-    episodes = load_manifest(output_dir)
+    episodes = [e for e in load_manifest(output_dir) if e["mp3_filename"] != mp3_filename]
     episodes.append(
         {
             "mp3_filename": mp3_filename,
