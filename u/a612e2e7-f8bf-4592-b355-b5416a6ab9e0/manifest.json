@@ -6,13 +6,5 @@
     "pub_date": "2026-08-06T15:18:59.931363+00:00",
     "duration_seconds": 334,
     "file_size_bytes": 4011512
-  },
-  {
-    "mp3_filename": "2026-08-06.mp3",
-    "title": "Drive Radio \u2014 August 6, 2026",
-    "description": "- Changes at Google DeepMind: Demis Hassabis from CEO to Chair, Jeff Dean departs: A major leadership shakeup at Google's AI crown jewel just as the Gemini vs ChatGPT race heats up. (https://blog.google/company-news/inside-google/message-ceo/next-chapter-ai-momentum/)\n- Nashville uses eminent domain to block data center near zoo: A city just seized land to stop an AI data center \u2014 a sign of the growing local backlash to Big Tech's infrastructure land grab. (https://www.costar.com/article/970809918/nashville-council-approves-eminent-domain-action-to-halt-data-center-project)\n- Virginia Orders Data Centers to Pay for Dedicated New Electric Infrastructure: The state hosting most of the world's internet traffic just forced data centers to foot their own power bill. (https://www.realtor.com/news/real-estate-news/virginia-data-center-electric-infrastructure-spanberger/)\n- Cloudflare OS: an open platform for agents, apps, and work: Cloudflare wants to be the operating system for the AI agent era, not just the plumbing underneath it. (https://blog.cloudflare.com/cloudflare-os/)\n- I'm switching my phone from Android to Linux: One developer's quiet rebellion against Google's grip on Android, even if it means losing half his apps. (https://runarcn.no/android-to-linux/)\n- Prime Agent: A self-improving RLM agent: An AI agent that debugs and improves its own reasoning loop without retraining \u2014 a possible glimpse at AI's next big leap. (https://www.primeintellect.ai/blog/prime-agent)",
-    "pub_date": "2026-08-06T08:01:03.110822+00:00",
-    "duration_seconds": 382,
-    "file_size_bytes": 4593938
   }
 ]
