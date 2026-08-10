@@ -3,13 +3,28 @@ banter script for the episode, in the spirit of shows like "The Best One
 Yet", Johnny Harris, and ColdFusion: real personality, curiosity-driven
 hooks, and a story arc per item instead of a flat headline recap."""
 
+import re
 from dataclasses import dataclass
 from datetime import date as date_cls
 
 import anthropic
 
+from . import feed
 from .settings import Settings, default_settings
 from .sources import Item
+
+_URL_RE = re.compile(r"\((https?://[^\s)]+)\)")
+RECENT_LOOKBACK = 3
+
+
+def _recently_covered_urls(settings: Settings, lookback: int = RECENT_LOOKBACK) -> set[str]:
+    """URLs already covered in the last `lookback` episodes (manifest is
+    newest-first), so we don't ask Claude to pick a still-trending story
+    it's already told this listener about."""
+    urls: set[str] = set()
+    for ep in feed.load_manifest(settings.output_dir)[:lookback]:
+        urls.update(_URL_RE.findall(ep.get("description", "")))
+    return urls
 
 SYSTEM_PROMPT = """\
 You are the writing team for "Drive Radio", a daily two-host audio show a \
@@ -150,6 +165,9 @@ def curate(
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     episode_date = episode_date or date_cls.today()
 
+    covered = _recently_covered_urls(settings)
+    items = [item for item in items if item.url not in covered]
+
     system = SYSTEM_PROMPT.format(
         host_a=settings.host_a_name,
         host_b=settings.host_b_name,
@@ -215,3 +233,33 @@ def _call_and_get_tool_use(
     )
     tool_use = next(block for block in response.content if block.type == "tool_use")
     return response, tool_use, tool_use.input
+
+
+def _self_check() -> None:
+    import tempfile
+
+    from .settings import default_settings
+
+    with tempfile.TemporaryDirectory() as tmp:
+        settings = default_settings().with_overrides(output_dir=tmp)
+        feed.save_manifest(
+            tmp,
+            [
+                {"description": "- Old story: blah (https://old.example/a)", "pub_date": "2026-01-01"},
+                {"description": "- Other: blah (https://old.example/b)", "pub_date": "2026-01-02"},
+            ],
+        )
+        covered = _recently_covered_urls(settings, lookback=2)
+        assert covered == {"https://old.example/a", "https://old.example/b"}, covered
+
+        items = [
+            Item(title="Old", summary="", url="https://old.example/a", source="x"),
+            Item(title="New", summary="", url="https://new.example/c", source="x"),
+        ]
+        kept = [i for i in items if i.url not in covered]
+        assert [i.url for i in kept] == ["https://new.example/c"], kept
+    print("curate self-check OK")
+
+
+if __name__ == "__main__":
+    _self_check()
