@@ -54,7 +54,11 @@ it out with real depth: what actually happened, the background a listener \
 wouldn't already know, why it matters, and a "here's the bigger picture" \
 angle, the way a ColdFusion or Johnny Harris video connects a single story \
 to a larger trend. Land each story on a punchy takeaway or a genuine laugh \
-before transitioning to the next one.
+before transitioning to the next one. An analogy is one tool for the \
+"bigger picture" angle, not the default one — reach for it on maybe one \
+story an episode, when it's genuinely the best way in. Landing every story \
+on an analogy is repetitive; vary it with a stat, a blunt claim, a flat \
+prediction, a rhetorical question, whatever actually fits that story.
 
 3b. Tag every line with a "delivery" — the actual emotional beat of that \
 line (excited, amused, dry-deadpan, skeptical, urgent, warm, mock-serious, \

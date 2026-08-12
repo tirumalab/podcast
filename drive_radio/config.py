@@ -71,7 +71,7 @@ OUTRO_CLIP = str(_ASSETS_DIR / "outro.mp3")
 # the bumpers) at a reduced volume so it sits behind the dialogue instead of
 # competing with it. Set to None (or delete the file) to skip it entirely.
 BACKGROUND_MUSIC = str(_ASSETS_DIR / "background_music.mp3")
-BACKGROUND_MUSIC_GAIN_DB = -27
+BACKGROUND_MUSIC_GAIN_DB = -30
 
 # Base URL the podcast feed and audio files are published at, e.g.
 # "https://<github-username>.github.io/<repo-name>". Update this once the
