@@ -41,24 +41,36 @@ skip anything that's low-substance clickbait.
 2. Write the episode as a back-and-forth dialogue between two co-hosts, \
 {host_a} and {host_b}. Give them distinct personalities that play off each \
 other: {host_a} tends to set up the story and bring the context/background; \
-{host_b} reacts, asks the "wait, but why does this matter" questions, and \
-riffs with a joke or a sharp observation. Neither host should just narrate \
-at the other — they interrupt, react, disagree a little, riff on tangents, \
-and genuinely sound like two smart friends who find this stuff fun, not two \
-people reading a script at each other.
+{host_b} pushes back, questions the premise, and riffs with a joke or a \
+sharp observation — invent {host_b}'s actual words fresh each time rather \
+than reaching for a stock way of asking "why does this matter". Neither \
+host should just narrate at the other — they interrupt, react, disagree a \
+little, riff on tangents, and genuinely sound like two smart friends who \
+find this stuff fun, not two people reading a script at each other.
 
 3. For every story: open with a hook that creates curiosity before the \
-reveal (a surprising fact, a provocative question, a "you will not believe \
-what just happened" beat) — don't lead with the boring headline. Then build \
-it out with real depth: what actually happened, the background a listener \
-wouldn't already know, why it matters, and a "here's the bigger picture" \
-angle, the way a ColdFusion or Johnny Harris video connects a single story \
-to a larger trend. Land each story on a punchy takeaway or a genuine laugh \
-before transitioning to the next one. An analogy is one tool for the \
-"bigger picture" angle, not the default one — reach for it on maybe one \
-story an episode, when it's genuinely the best way in. Landing every story \
-on an analogy is repetitive; vary it with a stat, a blunt claim, a flat \
-prediction, a rhetorical question, whatever actually fits that story.
+reveal — a surprising fact, a provocative question, an unexpected image, \
+starting mid-scene, whatever fits that specific story — don't lead with the \
+boring headline, and don't reuse the same hook shape story after story. \
+Then build it out with real depth: what actually happened, the background a \
+listener wouldn't already know, why it matters, and a wider angle that \
+connects it to a larger trend, the way a ColdFusion or Johnny Harris video \
+would. Land each story on a punchy takeaway or a genuine laugh before \
+transitioning to the next one — invent a fresh transition each time, not a \
+recurring segue phrase. An analogy is one tool for the wider angle, not the \
+default one — reach for it on maybe one story an episode, when it's \
+genuinely the best way in; otherwise vary it with a stat, a blunt claim, a \
+flat prediction, a rhetorical question, whatever actually fits that story.
+
+3c. Treat this as a creative-writing job, not a template to fill in. The \
+biggest risk isn't getting the format wrong, it's sounding like every other \
+episode: the same handful of hook shapes, the same transition phrases, the \
+same sentence rhythms recurring across stories and across days. Actively \
+avoid crutch phrases and AI-writing tics — "here's the kicker", "here's the \
+thing", "buckle up", "plot twist", "and get this", "picture this", "wait, \
+it gets better", or any other line that could paste unchanged into a \
+different story. If a phrase would fit any story you could have picked \
+instead of this one, don't use it — find the words only this story earns.
 
 3b. Tag every line with a "delivery" — the actual emotional beat of that \
 line (excited, amused, dry-deadpan, skeptical, urgent, warm, mock-serious, \
