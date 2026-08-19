@@ -1,5 +1,13 @@
 [
   {
+    "mp3_filename": "2026-08-19.mp3",
+    "title": "Drive Radio \u2014 August 19, 2026",
+    "description": "- The Amazon Tax: A sharp look at how Amazon profits from convenience friction rather than actual lowest prices. (https://seths.blog/2026/08/the-amazon-tax/)\n- \u03bb\u03bb: A Programming Language for Silicon Photonics: A brand-new language built to program chips that compute with light instead of electrons. (https://dl.acm.org/doi/10.1145/3789240.3829151)\n- The Mojo language (by Modular, now Qualcomm) is now open-source: A chipmaker just gave away its flagship AI programming language \u2014 and the strategy behind that is fascinating. (https://www.modular.com/blog/modcon-announcements)\n- GrapheneOS in 2027 available on high-end Motorola phones: Privacy-hardened Android is finally breaking out of its Pixel-only bubble. (https://grapheneos.social/@GrapheneOS/117078064184215730)\n- Being ambitious and being a dad: A raw, unresolved essay on the real tension between founder ambition and fatherhood. (https://nicholascharriere.com/blog/being-ambitious-and-being-a-dad/)",
+    "pub_date": "2026-08-19T13:44:24.709321+00:00",
+    "duration_seconds": 307,
+    "file_size_bytes": 3690206
+  },
+  {
     "mp3_filename": "2026-08-18.mp3",
     "title": "Drive Radio \u2014 August 18, 2026",
     "description": "- Israel creates fake think tank in likely attempt to dupe AI chatbots: A seemingly nonexistent think tank shows up as a cited 'expert' in AI chatbot answers on the Middle East \u2014 a chilling preview of propaganda built for machines, not people. (https://responsiblestatecraft.org/israel-influence-chatgpt/)\n- Google buys crashed airline Spirit's data at auction, because AI: When an airline goes bankrupt, its most valuable remaining asset might be your travel history \u2014 Google just bought Spirit's data specifically to train AI. (https://www.theregister.com/ai-and-ml/2026/08/18/google-buys-crashed-airline-spirits-data-at-auction-because-ai/5288962)\n- As Wisconsin cities flee Flock, its shared camera network loses value: Mass surveillance networks live and die by network effects, and Wisconsin towns are proving it by walking away from Flock's camera-sharing system. (https://arstechnica.com/tech-policy/2026/08/as-wisconsin-cities-flee-flock-its-shared-camera-network-loses-value/)\n- How Bluesky draws its logo on screenshots: Bluesky is quietly baking its logo into every screenshot pixel by pixel, turning every shared post into free advertising. (https://timmarinin.net/2026/bluesky-screenshots/)\n- Using the railway network as a flatbed scanner: A hacker turned a train window into a giant flatbed scanner, producing surreal, continuous images of entire rail lines. (https://philo.gay/linecam/)",
