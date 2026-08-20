@@ -5,14 +5,19 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const [sentEmail, setSentEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     setErrorMessage("");
+
+    // See login/page.tsx for why this reads FormData instead of trusting
+    // controlled `value` state.
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
 
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -25,6 +30,7 @@ export default function ForgotPasswordPage() {
       return;
     }
 
+    setSentEmail(email);
     setStatus("sent");
   }
 
@@ -34,7 +40,7 @@ export default function ForgotPasswordPage() {
         <div className="max-w-sm text-center">
           <h1 className="text-xl font-semibold">Check your email</h1>
           <p className="mt-2 text-gray-600">
-            If <span className="font-medium">{email}</span> has an account, we sent a link to
+            If <span className="font-medium">{sentEmail}</span> has an account, we sent a link to
             reset the password.
           </p>
         </div>
@@ -51,10 +57,10 @@ export default function ForgotPasswordPage() {
         </div>
 
         <input
+          name="email"
           type="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           placeholder="you@example.com"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />

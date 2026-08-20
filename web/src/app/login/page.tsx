@@ -7,15 +7,24 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     setErrorMessage("");
+
+    // Read straight from the DOM via FormData rather than trusting React's
+    // controlled `value` state: some browsers/password managers autofill a
+    // field without firing the `input` event React listens to, so the
+    // field visibly shows the saved password but React's state stays
+    // empty — sending that stale state gets a real "invalid credentials"
+    // rejection that only "fixes itself" on a reload (autofill re-fires
+    // differently). FormData always reflects the field's actual value.
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -39,18 +48,18 @@ export default function LoginPage() {
         </div>
 
         <input
+          name="email"
           type="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           placeholder="you@example.com"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />
         <input
+          name="password"
           type="password"
           required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
           placeholder="Password"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />

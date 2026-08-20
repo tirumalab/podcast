@@ -5,15 +5,21 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [sentEmail, setSentEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     setErrorMessage("");
+
+    // See login/page.tsx for why this reads FormData instead of trusting
+    // controlled `value` state — autofilled fields don't reliably fire
+    // React's onChange.
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     const supabase = createClient();
 
@@ -51,6 +57,7 @@ export default function SignupPage() {
       return;
     }
 
+    setSentEmail(email);
     setStatus("sent");
   }
 
@@ -60,8 +67,8 @@ export default function SignupPage() {
         <div className="max-w-sm text-center">
           <h1 className="text-xl font-semibold">Check your email</h1>
           <p className="mt-2 text-gray-600">
-            We sent a confirmation link to <span className="font-medium">{email}</span>. Open it
-            to finish creating your account.
+            We sent a confirmation link to <span className="font-medium">{sentEmail}</span>. Open
+            it to finish creating your account.
           </p>
         </div>
       </main>
@@ -77,19 +84,19 @@ export default function SignupPage() {
         </div>
 
         <input
+          name="email"
           type="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           placeholder="you@example.com"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />
         <input
+          name="password"
           type="password"
           required
           minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
           placeholder="Password (min. 6 characters)"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />
