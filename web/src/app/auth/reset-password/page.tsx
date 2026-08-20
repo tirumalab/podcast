@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+// Reached only after auth/callback has already exchanged the recovery
+// link's code for a real session — updateUser() below just needs that
+// session's cookie, already set by the time this page renders.
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,7 +19,7 @@ export default function LoginPage() {
     setErrorMessage("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       setStatus("error");
@@ -34,24 +35,16 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>
-          <h1 className="text-xl font-semibold">Drive Radio</h1>
-          <p className="mt-1 text-gray-600">Sign in to your account.</p>
+          <h1 className="text-xl font-semibold">Set a new password</h1>
         </div>
 
         <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
-        />
-        <input
           type="password"
           required
+          minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
+          placeholder="New password (min. 6 characters)"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-base"
         />
 
@@ -62,17 +55,8 @@ export default function LoginPage() {
           disabled={status === "loading"}
           className="w-full rounded-md bg-black px-3 py-2 text-base font-medium text-white disabled:opacity-50"
         >
-          {status === "loading" ? "Signing in…" : "Sign in"}
+          {status === "loading" ? "Saving…" : "Save new password"}
         </button>
-
-        <div className="flex justify-between text-sm text-gray-600">
-          <Link href="/signup" className="hover:text-black">
-            Create an account
-          </Link>
-          <Link href="/forgot-password" className="hover:text-black">
-            Forgot password?
-          </Link>
-        </div>
       </form>
     </main>
   );
