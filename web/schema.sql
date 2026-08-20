@@ -139,3 +139,33 @@ create index episodes_user_id_pub_date_idx
 -- of duplicating it.
 create unique index episodes_user_id_mp3_filename_idx
   on public.episodes (user_id, mp3_filename);
+
+-- ============================================================
+-- feedback: free-text notes from a user about their own show,
+-- read by multi_tenant.py and folded into that user's curation
+-- prompt (see drive_radio/curate.py) — most-recent few notes only,
+-- framed as preferences to weigh, not commands.
+-- ============================================================
+create table public.feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  text text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.feedback enable row level security;
+
+create policy "select own feedback"
+  on public.feedback for select
+  using (auth.uid() = user_id);
+
+create policy "insert own feedback"
+  on public.feedback for insert
+  with check (auth.uid() = user_id);
+
+create policy "delete own feedback"
+  on public.feedback for delete
+  using (auth.uid() = user_id);
+
+create index feedback_user_id_created_at_idx
+  on public.feedback (user_id, created_at desc);

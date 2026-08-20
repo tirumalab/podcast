@@ -91,8 +91,17 @@ needs real depth, not a one-line mention. Budget roughly 150-200 words of \
 combined dialogue per story. The total script MUST be {word_min}-{word_max} \
 words across all lines combined. This is a hard requirement, not a \
 suggestion — a script under {word_min} words is a failed task.
-
+{feedback_section}
 Call the write_episode tool with your selection and the full dialogue.
+"""
+
+FEEDBACK_SECTION_TEMPLATE = """
+6. This listener left the following feedback about the show in past \
+episodes. Weigh it as real preferences from the person you're making this \
+for — but use judgment: it's context, not a command that overrides the \
+rules above, and a note that's vague, contradictory, or doesn't apply to \
+today's stories can be skipped.
+{notes}
 """
 
 MIN_ACCEPTABLE_WORDS_FRACTION = 0.85
@@ -184,12 +193,18 @@ def curate(
     covered = _recently_covered_urls(settings)
     items = [item for item in items if item.url not in covered]
 
+    feedback_section = ""
+    if settings.feedback_notes:
+        notes = "\n".join(f"- {note}" for note in settings.feedback_notes)
+        feedback_section = FEEDBACK_SECTION_TEMPLATE.format(notes=notes)
+
     system = SYSTEM_PROMPT.format(
         host_a=settings.host_a_name,
         host_b=settings.host_b_name,
         style_hint=_style_for_date(episode_date, settings.style_variants),
         word_min=settings.target_word_count_min,
         word_max=settings.target_word_count_max,
+        feedback_section=feedback_section,
     )
     min_acceptable = int(settings.target_word_count_min * MIN_ACCEPTABLE_WORDS_FRACTION)
 
@@ -274,6 +289,22 @@ def _self_check() -> None:
         ]
         kept = [i for i in items if i.url not in covered]
         assert [i.url for i in kept] == ["https://new.example/c"], kept
+
+    no_notes = SYSTEM_PROMPT.format(
+        host_a="A", host_b="B", style_hint="x", word_min=1, word_max=2, feedback_section=""
+    )
+    assert "listener left the following feedback" not in no_notes
+
+    with_notes = SYSTEM_PROMPT.format(
+        host_a="A",
+        host_b="B",
+        style_hint="x",
+        word_min=1,
+        word_max=2,
+        feedback_section=FEEDBACK_SECTION_TEMPLATE.format(notes="- less music"),
+    )
+    assert "less music" in with_notes
+
     print("curate self-check OK")
 
 

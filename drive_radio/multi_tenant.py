@@ -49,6 +49,32 @@ def fetch_active_users() -> list[dict]:
     return resp.json()
 
 
+FEEDBACK_LOOKBACK = 10
+
+
+def fetch_recent_feedback(user_id: str) -> list[str]:
+    """Best-effort: a feedback-fetch failure should degrade to "no notes
+    this run", not take down that user's whole episode."""
+    supabase_url = os.environ["SUPABASE_URL"]
+    try:
+        resp = requests.get(
+            f"{supabase_url}/rest/v1/feedback",
+            headers=_supabase_headers(),
+            params={
+                "user_id": f"eq.{user_id}",
+                "select": "text",
+                "order": "created_at.desc",
+                "limit": str(FEEDBACK_LOOKBACK),
+            },
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return [row["text"] for row in resp.json()]
+    except requests.RequestException as exc:
+        print(f"warning: failed to fetch feedback for user {user_id}: {exc}")
+        return []
+
+
 def settings_for_user(row: dict) -> Settings:
     base = default_settings()
     user_id = row["user_id"]
@@ -59,6 +85,7 @@ def settings_for_user(row: dict) -> Settings:
         target_word_count_max=row["target_word_count_max"],
         host_a_voice=row["host_a_voice"],
         host_b_voice=row["host_b_voice"],
+        feedback_notes=fetch_recent_feedback(user_id),
         output_dir=os.path.join(base.output_dir, "u", user_id),
         podcast_base_url=f"{base.podcast_base_url}/u/{user_id}",
     )

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PreferencesForm, { type Preferences } from "./PreferencesForm";
 import FeedUrl from "./FeedUrl";
+import Feedback from "./Feedback";
 
 // Mirrors drive_radio/config.py's defaults, so a brand-new user starts
 // from the same place the single-user pipeline does.
@@ -43,6 +44,13 @@ export default async function DashboardPage() {
     preferences = created;
   }
 
+  const { data: feedback } = await supabase
+    .from("feedback")
+    .select("id, text, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
   const baseUrl = process.env.NEXT_PUBLIC_PODCAST_BASE_URL;
   const feedUrl = `${baseUrl}/u/${user.id}/rss.xml`;
 
@@ -54,6 +62,8 @@ export default async function DashboardPage() {
       </div>
 
       <FeedUrl feedUrl={feedUrl} />
+
+      <Feedback userId={user.id} initialFeedback={feedback ?? []} />
 
       {preferences && (
         <PreferencesForm userId={user.id} initialPreferences={preferences as Preferences} />

@@ -26,6 +26,7 @@ class Settings:
     style_variants: list[str]
     host_a_name: str
     host_b_name: str
+    feedback_notes: list[str]
 
     # Voice synthesis
     kokoro_lang_code: str
@@ -62,6 +63,7 @@ class Settings:
             style_variants=list(config.STYLE_VARIANTS),
             host_a_name=config.HOST_A_NAME,
             host_b_name=config.HOST_B_NAME,
+            feedback_notes=[],
             kokoro_lang_code=config.KOKORO_LANG_CODE,
             host_a_voice=config.HOST_A_VOICE,
             host_b_voice=config.HOST_B_VOICE,
