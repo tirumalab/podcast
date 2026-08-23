@@ -1,5 +1,13 @@
 [
   {
+    "mp3_filename": "2026-08-23.mp3",
+    "title": "Drive Radio \u2014 August 23, 2026",
+    "description": "- Iranian hackers shut down UK power plant for 4 days: A NATO country's critical infrastructure went dark for four days and the entry point is still a mystery \u2014 the air-gap myth just took a real hit. (https://www.telegraph.co.uk/news/2026/08/22/iranian-hackers-shut-down-uk-power-plant/)\n- Malware infects Android-based automotive head unit firmware: Your car's dashboard screen has basically become another unpatched Android phone, except it's bolted to two tons of steel. (https://securelist.com/android-head-unit-malware/121106/)\n- JIT Compiling Code in 5\u03bcs: A deep dive into shaving microseconds off compilation that turns into serious money and speed at scale. (https://malisper.me/jit-compiling-code-in-5-us/)\n- Why your local LLM feels dumber than it is: Your 'dumb' local model might just be suffering from bad quantization and context mismanagement, not actual stupidity. (https://forum.level1techs.com/t/why-your-local-llm-feels-dumber-than-it-is/253917)\n- Hister \u2013 A private, full content search index that you control: A local-first tool that indexes everything you've ever read so you can actually find it again, without the cloud. (https://hister.org/)",
+    "pub_date": "2026-08-23T13:36:12.727977+00:00",
+    "duration_seconds": 381,
+    "file_size_bytes": 4581713
+  },
+  {
     "mp3_filename": "2026-08-22.mp3",
     "title": "Drive Radio \u2014 August 22, 2026",
     "description": "- Felony charges for citizen deleting phone data at US Border: A man faces a felony for wiping his own phone before a border search, raising the question of whether deleting data is now legally treated as obstruction. (https://www.nytimes.com/2026/08/21/us/politics/samuel-tunick-deleted-phone-felony.html)\n- Felony Bench: A satirical site ranking everyday digital habits by how 'felony-adjacent' they might now be, born straight out of the border-search panic. (https://www.felonybench.com/)\n- Hook, hold, harvest and hide: Meta's alleged strategy laid out in first week: Internal-sounding language from a children's privacy trial allegedly reveals Meta's engagement playbook in four blunt words. (https://www.theguardian.com/technology/2026/aug/22/meta-trial-children-privacy)\n- Canada suspends trade negotiations with USA and match tariffs dollar for dollar: Canada freezes trade talks and matches US tariffs cent for cent, spooking hardware and chip-dependent industries alike. (https://www.pm.gc.ca/en/news/statements/2026/08/21/statement-prime-minister-carney-canada-us-trade-negotiations)\n- Kobo can run apps now: A new project called Cobalt turns Kobo e-readers into tiny general-purpose computers, proving no appliance stays locked down forever. (https://bandarlabs.github.io/Cobalt/)\n- I accidentally logged hundreds of thousands of phone calls to military bases: One developer stumbled into misrouted military phone traffic just by registering an obscure domain, exposing how fragile core telecom infrastructure really is. (https://lina.sh/blog/hijacking-e164-arpa)",
@@ -102,13 +110,5 @@
     "pub_date": "2026-08-09T13:53:25.690186+00:00",
     "duration_seconds": 397,
     "file_size_bytes": 4776064
-  },
-  {
-    "mp3_filename": "2026-08-08.mp3",
-    "title": "Drive Radio \u2014 August 8, 2026",
-    "description": "- Now we have a timeline of the OpenAI accidental attack against Hugging Face: A forensic timeline reveals how an autonomous OpenAI system accidentally DDoS'd Hugging Face \u2014 a scary preview of machine-speed mistakes with no human in the loop. (https://simonwillison.net/2026/Aug/7/openai-timeline/)\n- New Amazon Data Center Is Set to Have the Most Polluting Power Plant in the U.S.: The AI boom's carbon cost just got a literal address, as Amazon pairs a new Texas data center with what could be the country's dirtiest power plant. (https://www.nytimes.com/2026/08/08/climate/amazon-data-center-texas-pollution.html)\n- The Nixpkgs core team has disbanded: The volunteer team steering NixOS's massive package ecosystem just walked away, exposing how fragile open-source infrastructure really is. (https://discourse.nixos.org/t/the-nixpkgs-core-team-has-disbanded/79413)\n- Hardware backdoors in some x86 CPUs: Researchers exposed a hidden, undocumented processor core in certain x86 chips that can bypass all normal security \u2014 a literal backdoor in silicon. (https://github.com/xoreaxeaxeax/rosenbridge)\n- DeepMind's WeatherNext model achieves breakthrough forecasting cyclones: AI is now beating traditional physics models at predicting cyclone paths, giving coastal communities crucial extra days of warning. (https://deepmind.google/blog/weathernext-ai-model-achieves-breakthrough-in-forecasting-cyclones/)\n- NASA figured out how to keep its Voyager 2 probe running for another year: Forty-eight years and twelve billion miles from home, Voyager 2 gets one more clever power trick to keep phoning Earth. (https://www.space.com/space-exploration/voyager/nasa-figured-out-how-to-keep-its-48-year-old-voyager-2-probe-running-for-yet-another-year)",
-    "pub_date": "2026-08-08T13:50:24.225188+00:00",
-    "duration_seconds": 340,
-    "file_size_bytes": 4082983
   }
 ]
